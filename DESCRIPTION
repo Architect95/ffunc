@@ -1,0 +1,15 @@
+Package: ffunc
+Type: Package
+Title: Fast utility functions for R, implemented in C
+Version: 0.0.1
+Date: 2020-11-08
+Authors@R: c(person("Architect", "95", role = c("aut", "cre", "cph"), email = "71432761+Architect95@users.noreply.github.com"))
+Author: Architect95 [aut, cre, cph]
+Maintainer: Architect95 <71432761+Architect95@users.noreply.github.com>
+Description: Fast utility functions for R, implemented in C
+License: GPL-3
+Depends: R (>= 3.1.0)
+Encoding: UTF-8
+BugReports: https://github.com/Architect95/ffunc/issues
+NeedsCompilation: yes
+ByteCompile: TRUE
