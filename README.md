@@ -16,7 +16,7 @@ library(ffunc)
 
 ### `fsubstr(x, start, stop)`
 
-Drop-in replacement for `substr()`, optimised for speed. The majority of the speed gain is due to parallelisation.
+Drop-in replacement for `substr()`, optimised for speed over vectors. The majority of the speed gain is due to parallelisation.
 
 As with `substr()`, the resulting substrings can be assigned to, using `fsubstr(x, start, stop) <- value`.
 
@@ -32,4 +32,21 @@ As with `substr()`, the resulting substrings can be assigned to, using `fsubstr(
 > fsubstr(string, 2, 5) <- "XXYYZZ"
 > string
 [1] "aXXYYfghij"
+```
+
+
+### `fstr_sub(x, start, stop)`
+
+Another fast substring function, in which negative start and stop arguments are used to count backwards from the end of the input string.
+
+#### Example
+
+```R
+> string <- "abcde"
+> fstr_sub(string, -4, -2)
+[1] "bcd"
+> fstr_sub(string,  1, -4)
+[1] "ab"
+> fstr_sub(string,  4,  5)
+[1] "de"
 ```
