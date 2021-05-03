@@ -39,7 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
 -----------------------------------------------------------------------------
 */
 
-/* Modified on 08 November 2020 by Architect95 */
+/* Modified on 02 May 2021 by Architect95 */
 /* Modifications are on lines 1, 73 and 74 */
 
 /* This module contains an internal function for validating UTF-8 character
@@ -70,7 +70,7 @@ characters is still checked.
 #define VALID_UTF8_H
 
 
-static inline int  														/* Modif: added 'inline' */
+static int
 valid_utf8(const char *string, size_t length) /* Modif: changed int to size_t */
 {
     const unsigned char *p;

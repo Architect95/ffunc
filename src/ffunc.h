@@ -1,6 +1,6 @@
 /*
  * ffunc : Fast utility functions for R, implemented in C
- * Copyright (C) 2020 Architect95
+ * Copyright (C) 2021 Architect95
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,10 +26,14 @@
   #define USE_RINTERNALS
   #define DATAPTR_RO(x) ((const void *)DATAPTR(x))
 #endif
+
 #include <Rinternals.h>
+
+#include <assert.h>
 #include <stdlib.h>
 // #include <stdint.h>
 #include <stdbool.h>
+
 
 #ifdef _OPENMP
   #include<omp.h>
@@ -38,8 +42,10 @@
   #define OMP_MAX_THREADS 1
 #endif
 
+
 extern SEXP fsubstrR(SEXP x, SEXP start, SEXP stop);
 extern SEXP fsubstrassignR(SEXP x, SEXP start, SEXP stop, SEXP value);
+extern SEXP fstr_subR(SEXP x, SEXP start, SEXP stop);
 
 
 // Forced inlining macro:

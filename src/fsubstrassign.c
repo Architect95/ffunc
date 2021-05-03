@@ -3,7 +3,7 @@
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1997--2020  The R Core Team
  * 
- *  Modified on 08 November 2020 by Architect95
+ *  Modified on 02 May 2021 by Architect95
  *
  * 
  *  This program is free software; you can redistribute it and/or modify
@@ -24,66 +24,16 @@
 
 #include "char_utils.h"
 
-#include <wchar.h>
 #include "R_ext/Riconv.h"
 
 
 LibImport Rboolean mbcslocale;  // From line 30 of text.c
 #define ASCII_MASK (64)
 #define IS_ASCII(x) (LEVELS(x) & ASCII_MASK)
-#define isValidUtf8(str, len) (valid_utf8(str, len) == 0)
+//#define isValidUtf8(str, len) (valid_utf8(str, len) == 0)
 
 #define FAST_ARRAY_MEM_LIMIT 10000000  // 10m.
 // This length is chosen heuristically to avoid slow memory usage patterns.
-
-
-typedef struct {
- char *data;
- size_t bufsize;
- size_t defaultSize;
-} StringBuffer;
-
-static StringBuffer cbuff = {NULL, 0, 8192};
-
-static FORCE_INLINE void *allocStringBuffer(size_t blen, StringBuffer *buf)
-{
-  size_t blen1, bsize = buf->defaultSize;
-
-  if(blen * sizeof(char) >= buf->bufsize) {
-    buf->bufsize = (blen + 1) * sizeof(char);
-    buf->data = (char *) realloc(buf->data, buf->bufsize);
-    
-    blen1 = blen = (blen + 1) * sizeof(char);
-    blen = (blen / bsize) * bsize;
-    if(blen < blen1) blen += bsize;
-
-    if(buf->data == NULL) {
-      buf->data = (char *) malloc(blen);
-      if(buf->data) {
-        buf->data[0] = '\0';
-      }
-    } else {
-	    buf->data = (char *) realloc(buf->data, blen);
-    }
-    buf->bufsize = blen;
-    if(!buf->data) {
-      buf->bufsize = 0;
-      error("Could not allocate memory (%u Mb) in C function 'allocStringBuffer'.",
-            (unsigned int) blen>>20);
-    }
-  }
-  return buf->data;
-}
-
-void freeStringBuffer(StringBuffer *buf)
-{
-  // if (buf->data != NULL) {  // Modified - check is not needed
-	free(buf->data);
-	buf->bufsize = 0;
-	buf->data = NULL;
-  // }
-}
-
 
 
 static void setSubstrSingleElt(SEXP string, int i_start, int i_stop, 
@@ -94,11 +44,10 @@ static void setSubstrSingleElt(SEXP string, int i_start, int i_stop,
                               int i,
                               void *stack_ptr) {
 
-  // The speed of this function can be improved by 
-  // running max(i_start, 1) outside of the function. However, although the
-  // return value for i_start == NA_INTEGER could be made reasonable (e.g. 
-  // returning an empty string), it would not match the value returned by
-  // substr().
+  // The speed of this function could be improved by running max(i_start, 1) 
+  // outside of the function. However, although a reasonable return value could 
+  // be returned for the case i_start == NA_INTEGER (e.g. returning an empty
+  // string), it would not match the value returned by substr() in that case.
 
   // ints are used for string lengths, including in substr(). See
   // https://cran.r-project.org/doc/manuals/r-release/R-ints.html#Serialization-Formats
@@ -142,10 +91,10 @@ static void setSubstrSingleElt(SEXP string, int i_start, int i_stop,
     encoding   = CE_NATIVE;
     new_substr = translateChar(new_substring);
     new_nbytes = strlen(new_substr);
-    vmaxset(stack_ptr);
+    vmaxset(stack_ptr);  // Stack mgmt as required for translateChar
   }
   
-  char *buffer = allocStringBuffer(2*(nbytes + new_nbytes)+1, &cbuff);
+  char *buffer = allocStringBuffer(2*(nbytes + new_nbytes)+1, &strbuff);
 
   if (encoding == CE_UTF8) {
     if (!skip_validity_check && !isValidUtf8(str, nbytes)) {
@@ -302,7 +251,6 @@ SEXP fsubstrassignR(SEXP x, SEXP start, SEXP stop, SEXP replacement) {
 
     // If it's still not a valid integer vector, throw error:
     if (!isInteger(start)) {
-      UNPROTECT(n_extra_protections);
       error("Start contains non-integer values");
     }
     // Otherwise start was coerced to an integer vector:
@@ -314,7 +262,6 @@ SEXP fsubstrassignR(SEXP x, SEXP start, SEXP stop, SEXP replacement) {
 
     // If it's still not a valid integer vector, throw error:
     if (!isInteger(stop)) {
-      UNPROTECT(n_extra_protections);
       error("Stop contains non-integer values");
     }
     // Otherwise start was coerced to an integer vector:
@@ -343,7 +290,7 @@ SEXP fsubstrassignR(SEXP x, SEXP start, SEXP stop, SEXP replacement) {
               "vector; replacement substring will be partially recycled.");
     }
     
-    cbuff.data = malloc(cbuff.defaultSize);
+    strbuff.data = malloc(strbuff.defaultSize);
     void *const stack_ptr = vmaxget();
     
     SEXP prev_elt = NULL;
@@ -363,7 +310,7 @@ SEXP fsubstrassignR(SEXP x, SEXP start, SEXP stop, SEXP replacement) {
       prev_new_substr = new_substr;
     }
     
-    freeStringBuffer(&cbuff);
+    freeStringBuffer(&strbuff);
   }
   
   SHALLOW_DUPLICATE_ATTRIB(output, x);  // This copies the class, if any.

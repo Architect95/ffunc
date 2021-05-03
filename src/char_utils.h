@@ -3,7 +3,7 @@
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1997--2020  The R Core Team
  * 
- *  Modified on 08 November 2020 by Architect95
+ *  Modified on 02 May 2021 by Architect95
  *
  * 
  *  This program is free software; you can redistribute it and/or modify
@@ -25,10 +25,19 @@
 #ifndef CHAR_UTILS_H
 #define CHAR_UTILS_H
 
+#include <ctype.h>
 #include "ffunc.h"
 #include "ffunc_utils.h"
 #include <wchar.h>
 
+
+typedef struct {
+ char *data;
+ size_t bufsize;
+ size_t defaultSize;
+} StringBuffer;
+
+extern StringBuffer strbuff;
 
 static const unsigned char utf8_table4[] = {
   1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
@@ -39,14 +48,23 @@ static const unsigned char utf8_table4[] = {
 #include "valid_utf8.h"
 
 
-struct CharLenCE {
-  const char * restrict str_ptr;
-  int len;
-  cetype_t enc;
-};
+bool isValidUtf8(const char *string, size_t length);
 
-unsigned /*char*/ utf8clen(const char c);
+
+typedef struct {
+  const char * restrict str_ptr;
+  int nbytes;
+  cetype_t enc;
+} CharLenCE;
+
+unsigned char utf8clen(const char c);
 
 size_t Mbrtowc(wchar_t *wc, const char *s, size_t n, mbstate_t *ps);
+
+void *allocStringBuffer(size_t blen, StringBuffer *buf);
+
+void freeStringBuffer(StringBuffer *buf);
+
+bool isStatelessEncoding();
 
 #endif

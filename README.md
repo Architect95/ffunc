@@ -1,10 +1,11 @@
 # ffunc
 
-Fast utility functions for R, implemented in C
+**ffunc** is an R package containing fast utility functions, implemented in C.
 
 
 ## Installation
 
+Run the following commands in R:
 ```R
 devtools::install_github("Architect95/ffunc", ref="main")
 
