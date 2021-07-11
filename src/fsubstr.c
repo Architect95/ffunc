@@ -78,6 +78,7 @@ static CharLenCE substrSingleElt(SEXP string, int i_start, int i_stop,
 
 SEXP fsubstrR(SEXP x, SEXP start, SEXP stop) {
 
+  // Deal with inputs that are not string vectors:
   if (!isString(x)) {
     if (xlength(x) == 0) {
       // Return character(0):
@@ -87,9 +88,12 @@ SEXP fsubstrR(SEXP x, SEXP start, SEXP stop) {
       return output;
     }
     if (LOGICAL(x)[0] == NA_LOGICAL) {
-      // Return a character vector containing a single NA_STRING:
-      SEXP output = PROTECT(allocVector(STRSXP, 1));
-      SET_STRING_ELT(output, 0, NA_STRING);
+      // Return a character vector containing NA_STRINGs:
+      const R_xlen_t n = xlength(x);
+      SEXP output = PROTECT(allocVector(STRSXP, n));
+      for (R_xlen_t i = 0; i < n; ++i) {
+        SET_STRING_ELT(output, i, NA_STRING);
+      }
       SHALLOW_DUPLICATE_ATTRIB(output, x);
       UNPROTECT(1);
       return output;
