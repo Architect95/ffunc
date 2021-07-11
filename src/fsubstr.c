@@ -3,7 +3,7 @@
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
  *  Copyright (C) 1997--2020  The R Core Team
  * 
- *  Modified on 09 May 2021 by Architect95
+ *  Modified on 11 July 2021 by Architect95
  *
  * 
  *  This program is free software; you can redistribute it and/or modify
@@ -24,7 +24,7 @@
 
 #include "substr_utils.h"
 
-#include "R_ext/Riconv.h"
+// #include "R_ext/Riconv.h"
 
 
 static CharLenCE substrSingleElt(SEXP string, int i_start, int i_stop, 
@@ -78,31 +78,12 @@ static CharLenCE substrSingleElt(SEXP string, int i_start, int i_stop,
 
 SEXP fsubstrR(SEXP x, SEXP start, SEXP stop) {
 
-  // Deal with inputs that are not string vectors:
-  if (!isString(x)) {
-    if (xlength(x) == 0) {
-      // Return character(0):
-      SEXP output = PROTECT(allocVector(STRSXP, 0));
-      SHALLOW_DUPLICATE_ATTRIB(output, x);
-      UNPROTECT(1);
-      return output;
-    }
-    if (LOGICAL(x)[0] == NA_LOGICAL) {
-      // Return a character vector containing NA_STRINGs:
-      const R_xlen_t n = xlength(x);
-      SEXP output = PROTECT(allocVector(STRSXP, n));
-      for (R_xlen_t i = 0; i < n; ++i) {
-        SET_STRING_ELT(output, i, NA_STRING);
-      }
-      SHALLOW_DUPLICATE_ATTRIB(output, x);
-      UNPROTECT(1);
-      return output;
-    }
-    error("The vector of strings supplied is not a character object");
-  }
-
-
   const R_xlen_t n = xlength(x);
+  
+  if (!isString(x)) {
+    HANDLE_NON_STRING_INPUT(x, n)
+  }
+  
 
   // When the string vector is small enough, call substr() as it will
   // probably be faster:

@@ -67,4 +67,26 @@ void freeStringBuffer(StringBuffer *buf);
 
 bool isStatelessEncoding();
 
+#define HANDLE_NON_STRING_INPUT(x, n) {                                        \
+  if (n == 0) {                                                                \
+    /* Return character(0): */                                                 \
+    SEXP output = PROTECT(allocVector(STRSXP, 0));                             \
+    SHALLOW_DUPLICATE_ATTRIB(output, x);                                       \
+    UNPROTECT(1);                                                              \
+    return output;                                                             \
+  }                                                                            \
+  if (LOGICAL(x)[0] == NA_LOGICAL) {                                           \
+    /* Return a character vector containing NA_STRINGs: */                     \
+    SEXP output = PROTECT(allocVector(STRSXP, n));                             \
+    for (R_xlen_t i = 0; i < n; ++i) {                                         \
+      SET_STRING_ELT(output, i, NA_STRING);                                    \
+    }                                                                          \
+    SHALLOW_DUPLICATE_ATTRIB(output, x);                                       \
+    UNPROTECT(1);                                                              \
+    return output;                                                             \
+  }                                                                            \
+  error("The vector of strings supplied is not a character object");           \
+}                                                                              \
+
+
 #endif

@@ -186,22 +186,7 @@ SEXP fsubstrassignR(SEXP x, SEXP start, SEXP stop, SEXP replacement) {
   const R_xlen_t n = xlength(x);
   
   if (!isString(x)) {
-    if (n==0) {
-      // Return character(0):
-      SEXP output = PROTECT(allocVector(STRSXP, 0));
-      SHALLOW_DUPLICATE_ATTRIB(output, x);
-      UNPROTECT(1);
-      return output;
-    }
-    if (LOGICAL(x)[0] == NA_LOGICAL) {
-      // Return a character vector containing a single NA_STRING:
-      SEXP output = PROTECT(allocVector(STRSXP, 1));
-      SET_STRING_ELT(output, 0, NA_STRING);
-      SHALLOW_DUPLICATE_ATTRIB(output, x);
-      UNPROTECT(1);
-      return output;
-    }
-    error("The vector of strings supplied is not a character object");
+    HANDLE_NON_STRING_INPUT(x, n)
   }
   
   
