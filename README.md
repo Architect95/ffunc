@@ -43,7 +43,7 @@ As with `substr()`, the resulting substrings can be assigned to, using `fsubstr(
 
 #### How `fsubstr()` works
 
-1. The string vector is split into batches, each one shorter than `FAST_ARRAY_MEM_LIMIT` to avoid slow memory access (e.g. due to cache misses)
+1. The string vector is split into batches, each one shorter than `FAST_ARRAY_MEM_LIMIT` to avoid slow memory access (e.g. due to cache misses)<br />
 ![fsubstr routine](docs/fsubstr.png "fsubstr routine").
 2. For each batch:
     1. each string in a batch is processed using the internal function `substrSingleElt()`, which can run on multiple threads in parallel. The results are stored in the temporary array `substrings`;
