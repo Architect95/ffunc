@@ -72,7 +72,7 @@ test_that("Substrings using every 1000th UTF-8 character", {
   }
 })
 
-test_that("Length-1 inputs", {
+test_that("Length-one inputs", {
   expect_equal(
     substr( rep(c("Alpha"), times=n_elts_avoid_sso), start, stop),
     fsubstr(rep(c("Alpha"), times=n_elts_avoid_sso), start, stop)
@@ -236,7 +236,7 @@ test_that("CE_NATIVE-encoded strings", {
   
   # Confirm that the test string is indeed in native encoding on the system
   # running the test:
-  expect_equal(encodingEnum(test_string, 1), 2)
+  expect_equal(encodingEnum(test_string, 1), 0)
   
   test_strings     <- rep(test_string, times = n_elts_avoid_sso)
   
