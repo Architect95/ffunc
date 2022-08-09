@@ -43,3 +43,5 @@ vignettes/*.pdf
 *.o
 *.so
 *.dll
+*.i
+*.s

@@ -93,8 +93,8 @@ test_that("Length-one inputs", {
 
 test_that("NA string", {
   expect_equal(
-    substr( rep(c(NA, test_strings), each=n_elts_avoid_sso), start, stop),
-    fsubstr(rep(c(NA, test_strings), each=n_elts_avoid_sso), start, stop)
+    substr( rep(c(NA, test_string), each=n_elts_avoid_sso), start, stop),
+    fsubstr(rep(c(NA, test_string), each=n_elts_avoid_sso), start, stop)
   )
   expect_equal(
     substr( NA, start, stop),
@@ -303,3 +303,4 @@ test_that("SHALLOW_DUPLICATE_ATTRIB preserves the class of the input", {
     class(fsubstr(test_strings, start, stop))
   )
 })
+

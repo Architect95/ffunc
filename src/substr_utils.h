@@ -25,6 +25,9 @@
 #include "char_utils.h"
 
 
+inline R_xlen_t max_xlen(const R_xlen_t a, const R_xlen_t b) { 
+  return a ^ ((a ^ b) & -(a < b));
+}
 
 LibImport Rboolean mbcslocale;  // From line 30 of text.c. See it in l10n_info()
 bool               is_stateless_enc;
@@ -38,8 +41,7 @@ bool               is_stateless_enc;
 #define NA_STRING_CLC    (const CharLenCE) {NULL, -1, CE_NATIVE}
 #define EMPTY_STRING_CLC (const CharLenCE) {NULL,  0, CE_NATIVE}
 
-
-#define FSUBSTR_LOOP(substr_func, substr_start, substr_end) {                 \
+#define FSUBSTR_LOOP(substr_func, str_elt, n, substr_start, substr_end) {                 \
                                                                               \
   if (!is_stateless_enc) {                                                    \
     /* Need to write to buffer, so cannot use parallel code */                \
@@ -49,7 +51,7 @@ bool               is_stateless_enc;
     SEXP prev_elt = NULL;                                                     \
                                                                               \
     for (R_xlen_t i = 0; i < n; ++i) {                                        \
-      const SEXP restrict element = STRING_ELT(x,i);                          \
+      const SEXP restrict element = str_elt;                                  \
       substring =                                                             \
         substr_func(element, (substr_start), (substr_end),                    \
                     element == prev_elt);  /*Ptr comparison to prev_elt*/     \
@@ -74,7 +76,7 @@ bool               is_stateless_enc;
                                                                               \
       _Pragma("omp parallel for firstprivate(prev_elt)")                      \
       for (R_xlen_t i = loop_start; i < loop_end; ++i) {                      \
-        const SEXP restrict element = STRING_ELT(x,i);                        \
+        const SEXP restrict element = str_elt;                                \
         substrings[i - loop_start] =                                          \
           substr_func(element, (substr_start), (substr_end),                  \
                       element == prev_elt);  /*Ptr comparison to prev_elt*/   \
@@ -140,6 +142,22 @@ warnIfVectorArgRecycled(const char * restrict arg_name, const R_xlen_t arg_len,
 }
 
 
+// UTF-8 string functions:
+
+static FORCE_INLINE StrIndex
+u8Count(int count, const int i_stop, 
+        const char *str, const char *restrict const end) {
+  
+  for (; count < i_stop && str < end; ++count) {
+    str += utf8clen(*str);
+  }
+  return (const StrIndex) {count, str};
+}
+
+
+
+// Multibyte string functions:
+
 static FORCE_INLINE StrIndex
 mbCount(int count, const int i_stop, 
         const char *str, const char *restrict const end, 
@@ -148,7 +166,6 @@ mbCount(int count, const int i_stop,
   for (; count < i_stop && str < end; ++count) {
     str += Mbrtowc(NULL, str, MB_CUR_MAX, mb_st_ptr);
   }
-
   return (const StrIndex) {count, str};
 }
 
@@ -266,17 +283,16 @@ substrUtf8(const char *str, const int nbytes, const cetype_t encoding,
   const char *const end = str + nbytes;
   // Increment the str pointer past all the characters at the front to be
   // omitted:
-  int j = 0;
-  for (; j < just_before_start && str < end; ++j) {
-    // The comparison to end is needed because there's no check whether a
-    // given char is the null terminator.
-    str += utf8clen(*str);
-  }
+  StrIndex start_of_sub = u8Count(0, just_before_start, str, end);
+  int j = start_of_sub.index;
+  str = start_of_sub.ptr;
+  
   const char *const start_point = str;
-  for (; j < i_stop && str < end; ++j) {
-    str += utf8clen(*str);
-  }
-  return (const CharLenCE) {start_point, (int)(str - start_point), encoding};
+  
+  StrIndex end_of_sub = u8Count(j, i_stop, str, end);
+  
+  return (const CharLenCE) {start_point, (int)(end_of_sub.ptr - start_point),
+                            encoding};
 }
 
 static FORCE_INLINE CharLenCE 

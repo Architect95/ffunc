@@ -24,7 +24,6 @@
 
 #include "substr_utils.h"
 
-// #include "R_ext/Riconv.h"
 
 
 static CharLenCE substrSingleElt(SEXP string, int i_start, int i_stop, 
@@ -148,28 +147,30 @@ SEXP fsubstrR(SEXP x, SEXP start, SEXP stop) {
     int i_start = asInteger(start);
     int i_stop = asInteger(stop);
 
-    FSUBSTR_LOOP(substrSingleElt, i_start, i_stop)
+    FSUBSTR_LOOP(substrSingleElt, STRING_ELT(x,i), n, i_start, i_stop)
 
   } else if (start_len == 1) {
     
     int i_start = asInteger(start);
     warnIfVectorArgRecycled("stop",  stop_len,  n);
 
-    FSUBSTR_LOOP(substrSingleElt, i_start, INTEGER(stop)[i % stop_len])
+    FSUBSTR_LOOP(substrSingleElt, STRING_ELT(x,i), n,
+                 i_start, INTEGER(stop)[i % stop_len])
 
   } else if (stop_len == 1) {
     
     int i_stop = asInteger(stop);
     warnIfVectorArgRecycled("start", start_len, n);
     
-    FSUBSTR_LOOP(substrSingleElt, INTEGER(start)[i % start_len], i_stop)
+    FSUBSTR_LOOP(substrSingleElt, STRING_ELT(x,i), n,
+                 INTEGER(start)[i % start_len], i_stop)
 
   } else {
     warnIfVectorArgRecycled("start", start_len, n);
     warnIfVectorArgRecycled("stop",  stop_len,  n);
 
-    FSUBSTR_LOOP(substrSingleElt, INTEGER(start)[i % start_len], 
-                                  INTEGER(stop)[i % stop_len])
+    FSUBSTR_LOOP(substrSingleElt, STRING_ELT(x,i), n,
+                INTEGER(start)[i % start_len], INTEGER(stop)[i % stop_len])
   }
 
   SHALLOW_DUPLICATE_ATTRIB(output, x);  // This copies the class, if any.
