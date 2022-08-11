@@ -23,7 +23,7 @@
 
 #include "substr_utils.h"
 
-
+#define LOOKBACK_LENGTH 64
 
 static FORCE_INLINE CharLenCE signedSubstrUtf8(
   const char *str, const int nbytes, const cetype_t encoding,
@@ -452,19 +452,19 @@ signedSubstrAfterShiftStateIsSet(const char *str, const cetype_t encoding,
   return (const CharLenCE) {strbuff.data, new_nbytes, encoding};
 }
 
-#define SIGNED_SUBSTR_IN_CUR_STATE_WITH_LOOKBACK(start_of_sub, out_nbytes)    \
-                                                                              \
+#define SIGNED_SUBSTR_IN_CUR_STATE_WITH_LOOKBACK(start_of_sub, out_nbytes)     \
+                                                                               \
   const char *last_m_chars_ptrs[lookback_length];                              \
-                                                                              \
-  StrLookbackIndex end_of_str =                                               \
+                                                                               \
+  StrLookbackIndex end_of_str =                                                \
     mbCountToEndWithLookback(count, start_of_sub, end, &mb_st, lookback_length,\
-                             last_m_chars_ptrs);                              \
-  const int nchars = end_of_str.index;                                        \
-  const int i      = end_of_str.lookback_index;                               \
-                                                                              \
-  if ((nchars + i_stop) + 1 < i_start) { return EMPTY_STRING_CLC; }           \
-                                                                              \
-  const int out_nbytes = getSubNbytesFromLookback(start_of_sub, end,          \
+                             last_m_chars_ptrs);                               \
+  const int nchars = end_of_str.index;                                         \
+  const int i      = end_of_str.lookback_index;                                \
+                                                                               \
+  if ((nchars + i_stop) + 1 < i_start) { return EMPTY_STRING_CLC; }            \
+                                                                               \
+  const int out_nbytes = getSubNbytesFromLookback(start_of_sub, end,           \
     lookback_length, i, i_stop, last_m_chars_ptrs);                            \
 
 static FORCE_INLINE CharLenCE
@@ -566,8 +566,6 @@ signedSubstrUtf8(const char *start_of_str, const int nbytes,
   const char *restrict str = start_of_str;
   const char *const end    = start_of_str + nbytes;
   
-  const int lookback_length = 20;
-  
   int count = 0;
   if (i_start >= 0) {  // start >= 0, stop < 0
   
@@ -583,7 +581,9 @@ signedSubstrUtf8(const char *start_of_str, const int nbytes,
                                 encoding};
     }
   
-    if (-i_stop <= lookback_length) {  // Use lookback
+    if (-i_stop <= LOOKBACK_LENGTH) {  // Use lookback
+    
+      const int lookback_length = -i_stop;
     
       const char *last_m_chars_ptrs[lookback_length];
       
@@ -621,7 +621,10 @@ signedSubstrUtf8(const char *start_of_str, const int nbytes,
   }
   else if (i_stop >= 0) {  // start < 0, stop >= 0
   
-    if (-i_start <= lookback_length) {  // Use lookback
+    if (-i_start <= LOOKBACK_LENGTH) {  // Use lookback
+    
+      const int lookback_length = -i_start;
+    
       const char *last_m_chars_ptrs[lookback_length];
       
       // Count to stop:
@@ -687,7 +690,9 @@ signedSubstrUtf8(const char *start_of_str, const int nbytes,
   }
   else {  // start < 0 AND stop < 0
   
-    if (-i_stop <= lookback_length) {  // Use lookback
+    if (-i_stop <= LOOKBACK_LENGTH) {  // Use lookback
+    
+      const int lookback_length = min(-i_start, -i_stop);
     
       const char *last_m_chars_ptrs[lookback_length];
       
@@ -765,8 +770,6 @@ signedSubstrMultiByteChars(const char *const restrict start_of_str,
   
   const char *const restrict end = start_of_str + nbytes;
   
-  const int lookback_length = 20;
-  
   int count = 0;
   if (i_start >= 0) {  // start >= 0, stop < 0
     
@@ -776,8 +779,10 @@ signedSubstrMultiByteChars(const char *const restrict start_of_str,
                                     &mb_st);
     count = start_of_sub.index;
     
-    if (-i_stop <= lookback_length) {  // Use lookback
-    
+    if (-i_stop <= LOOKBACK_LENGTH) {  // Use lookback
+      
+      const int lookback_length = -i_stop;
+      
       if (!mbsinit(&mb_st)) {
         return signedSubstrWithinShiftStateWithLookback(
           start_of_sub.ptr, encoding, mb_st, end, count, i_start, i_stop,
@@ -805,7 +810,9 @@ signedSubstrMultiByteChars(const char *const restrict start_of_str,
   }
   else if (i_stop >= 0) {  // start < 0, stop >= 0
     
-    if (-i_start <= lookback_length) {  // Use lookback
+    if (-i_start <= LOOKBACK_LENGTH) {  // Use lookback
+      
+      const int lookback_length = -i_start;
       
       const char *last_m_chars_ptrs[lookback_length];
       mbstate_t last_m_mbstates[lookback_length];
@@ -871,7 +878,9 @@ signedSubstrMultiByteChars(const char *const restrict start_of_str,
     
   } else {  // start < 0 AND stop < 0
     
-    if (-i_stop <= lookback_length) {  // Use lookback
+    if (-i_stop <= LOOKBACK_LENGTH) {  // Use lookback
+    
+      const int lookback_length = min(-i_start, -i_stop);
     
       const char *last_m_chars_ptrs[lookback_length];
       int nchars, i;
@@ -956,8 +965,8 @@ signedSubstrMultiByteChars(const char *const restrict start_of_str,
         
       } else {
         
-        StrIndex end_of_sub = mbRecount(count, i_stop_abs, start_of_sub.ptr, end,
-                                      &mb_st);
+        StrIndex end_of_sub = mbRecount(count, i_stop_abs, start_of_sub.ptr,
+                                        end, &mb_st);
         
         const int new_nbytes = end_of_sub.ptr - start_of_sub.ptr;
         
