@@ -1,7 +1,7 @@
 library(stringr)  # fstr_sub is tested against str_sub
 
 n_elts_avoid_sso <- 3500  # Input vector must be long enough to avoid
-                          # small size optimizations
+                          # small size optimisations
                           # Currently, there is no such small size optimization
                           # to avoid
 
@@ -99,19 +99,22 @@ longer than the lookback length", {
 test_that("Stop == 0 gives empty string", {
   expect_equal(
     rep("", times = n_elts_avoid_sso),
-    fstr_sub( rep(unicode[1], times = n_elts_avoid_sso), -41:41, 0)
+    fstr_sub( rep(unicode_string, times = n_elts_avoid_sso), -41:41, 0)
   )
 })
 
 test_that( "Missing arg produces an error", {
   expect_error(
-    fstr_sub(does_not_exist, start, stop),   "object 'does_not_exist' not found"
+    fstr_sub(does_not_exist, start, stop),
+    "object 'does_not_exist' not found"
   )
   expect_error(
-    fstr_sub(a_to_j, does_not_exist, stop),  "object 'does_not_exist' not found"
+    fstr_sub(test_string, does_not_exist, stop), 
+    "object 'does_not_exist' not found"
   )
   expect_error(
-    fstr_sub(a_to_j, start, does_not_exist), "object 'does_not_exist' not found"
+    fstr_sub(test_string, start, does_not_exist), 
+    "object 'does_not_exist' not found"
   )
 })
 
@@ -278,6 +281,17 @@ encodingEnum <- inline::cfunction(
 # CE_SYMBOL = 5,
 # CE_ANY    =99
 
+
+# The below expression using substr() and ifelse cases is equivalent to the
+# usual str_sub() behaviour. It is used in cases where str_sub() does not
+# produce the desired behaviour:
+substrlen <- function(strings, start, stop, str_len) {
+  substr(strings, 
+         ifelse(start < 0, pmax(start + str_len + 1, 1), start), 
+         ifelse(stop  < 0, pmax(stop  + str_len + 1, 0), stop)
+  )
+}
+
 test_that("CE_NATIVE-encoded strings", {
   
   chars       <- as.raw(120:255)
@@ -303,12 +317,9 @@ test_that("CE_NATIVE-encoded strings", {
   start_stop_len   <- max(length(start), length(stop))
   test_strings     <- rep(test_string, times = start_stop_len)
   nchars           <- nchar(test_string)
-
-  start_abs <- ifelse(start >= 0, start, nchars + start + 1)
-  stop_abs  <- ifelse(stop  >= 0, stop,  nchars + stop  + 1)
   
   expect_equal(
-    substr(test_strings, start_abs, stop_abs),
+    substrlen(test_strings, start, stop, nchars),
     fstr_sub(test_strings, start, stop)
   )
 })
@@ -462,7 +473,7 @@ test_that("CE_LATIN1-encoded strings", {
   test_string <- paste0("abcde_\xc3\xc4\xc5\xc6\xc7\xc8_abcde")
   Encoding(test_string) <- "latin1"
   
-  # Confirm that the test string is indeed in native encoding on the system
+  # Confirm that the test string is indeed in Latin1 encoding on the system
   # running the test:
   expect_equal(Encoding(test_string), "latin1")
   
@@ -480,22 +491,18 @@ test_that("CE_BYTES-encoded strings", {
   n_char <- 18
   Encoding(test_string) <- "bytes"
   
-  # Confirm that the test string is indeed in native encoding on the system
+  # Confirm that the test string is indeed in bytes encoding on the system
   # running the test:
   expect_equal(Encoding(test_string), "bytes")
   
   n_rep        <- max(n_elts_avoid_sso, length(start), length(stop))
   test_strings <- rep(test_string, times = n_rep)
   
-  expect_equal(  # str_sub() does not work with CE_BYTES encoding, so the below
-                 # expression using substr() and ifelse cases is equivalent to
-                 # the usual str_sub() behaviour:
-    substr(test_strings, 
-           ifelse(start < 0, pmax(start + n_char + 1, 1), start), 
-           ifelse(stop  < 0, pmax(stop  + n_char + 1, 0), stop)
-    ),
-    fstr_sub(test_strings, start, stop)
+  expect_equal(  # str_sub() does not support CE_BYTES encoding
+    substrlen(test_strings, start, stop, n_char),
+    fstr_sub( test_strings, start, stop)
   )
+  
 })
 
 # CE_ANY and CE_SYMBOL appear to be internal parameter values that it is not
@@ -506,12 +513,6 @@ test_that("CE_BYTES-encoded strings", {
 # in R's string hash table, in which case no new entry is added to the hash 
 # table, and the encoding specifier of the existing entry is not modified).
 
-substrlen <- function(strings, start, stop, str_len) {
-  substr(strings, 
-         ifelse(start < 0, pmax(start + str_len + 1, 1), start), 
-         ifelse(stop  < 0, pmax(stop  + str_len + 1, 0), stop)
-  )
-}
 
 test_that("SHALLOW_DUPLICATE_ATTRIB preserves the class of the input", {
   
