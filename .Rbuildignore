@@ -1,0 +1,10 @@
+^README\.md$
+^LICENCE$
+^.*\.Rproj$
+^.*\.RData$
+^\.Rproj\.user$
+^\.vscode$
+^.*\.s$
+^.*\.i$
+^.*\.o$
+^docs/*$

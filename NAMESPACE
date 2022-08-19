@@ -1,5 +1,5 @@
 useDynLib(ffunc, .registration = TRUE)
 
-export(
-  fsubstr
-)
+export(fstr_sub)
+export(fsubstr)
+export("fsubstr<-")

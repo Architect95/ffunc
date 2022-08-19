@@ -34,9 +34,9 @@ As with `substr()`, the resulting substrings can be assigned to, using `fsubstr(
 > string
 [1] "a_cdefgh"
 
-> fsubstr(string, 2, 5) <- "123456"
+> fsubstr(string, 2, 5) <- "KLMNOP"
 > string
-[1] "a1234fgh"
+[1] "aKLMNfgh"
 ```
 
 
@@ -47,15 +47,15 @@ As with `substr()`, the resulting substrings can be assigned to, using `fsubstr(
 ![fsubstr routine](docs/fsubstr.png "fsubstr routine").
 2. For each batch:
     1. each string in a batch is processed using the internal function `substrSingleElt()`, which can run on multiple threads in parallel. The results are stored in the temporary array `substrings`;
-    2. the substrings are then written into the `output` string vector (writing strings must be done in series because writing to R's string hash table is not thread-safe). The majority of `fsubstr`'s execution time is spent here.
+    2. the substrings are then written into the `output` string vector (writing strings must be done in series because writing to R's string hash table is not thread-safe). The majority of `fsubstr()`'s execution time is spent here.
 
-`fsubstr()<-` does not use parallel processing because a new string is produced for each string in the input vector - storing these in a temporary vector can take a considerable amount of memory if the input strings are long enough. By contrast, in `fsubstr()`, only the start and end points and the encoding of each substring need to be written, so the memory usage is limited.
+`fsubstr()<-` does not use parallel processing because a new string is produced for each string in the input vector - storing these in a temporary vector can take a considerable amount of memory if the input strings are long enough. By contrast, in `fsubstr()`, only the start and end points and the encoding of each substring need to be stored, so the memory usage is limited.
 
 
 
 ### `fstr_sub(x, start, stop)`
 
-Another fast substring function, in which negative start and stop arguments may be used to count backwards from the end of the input string.
+Another fast substring function, in which negative start and stop arguments may be used to count backwards from the end of the input strings.
 
 #### Example
 
@@ -75,9 +75,9 @@ Another fast substring function, in which negative start and stop arguments may 
 
 #### How `fstr_sub()` works
 
-`fstr_sub()` follows the same routine as `fsubstr()` for positive start and stop values. On strings in multibyte character encodings where the string must be traversed from the start in order to determine the position of any given character, the following method is used for start or stop values that are negative offsets from the end of the string.
+`fstr_sub()` follows the same routine as `fsubstr()` for positive start and stop values. On strings in variable-width and stateful character encodings where the string must be traversed from the start in order to determine the position of any given character, the following method is used for start or stop values that are negative offsets from the end of the string.
 1. As the string is traversed forwards, the addresses of each character are written into a lookback buffer of length `m` called `last_m_char_ptrs`, wrapping around and overwriting earlier characters if the buffer length is exceeded.
-2. Once the end of the string is reached and the negative relative offset has been converted to an absolute character index, the address of the relevant character can be retrieved directly from the lookback buffer instead of having to traverse the string from the start again.
+2. Once the end of the string is reached, the address of the relevant character can be retrieved directly from the lookback buffer instead of having to traverse the string from the start again.
 
 For example:
 
