@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-library(stringr)  # fstr_sub is tested against str_sub
+library(stringr)  # fstr_sub is tested against stringr::str_sub
 
 n_elts_avoid_sso <- 3500  # Input vector must be long enough to avoid
-                          # small size optimisations
+                          # small size optimisations.
                           # Currently, there is no such small size optimization
-                          # to avoid
+                          # to avoid.
 
 test_string      <- "abcdefghijklmnopqrstuvwxyz"
 test_strings     <- rep(test_string, times = n_elts_avoid_sso)
@@ -33,7 +33,7 @@ start            <- rep(test_lengths, times = length(test_lengths))
 stop             <- rep(test_lengths, each  = length(test_lengths))
 
 
-# Make sure len(start) is significantly higher than n_elts_avoid_sso:
+# Ensure that length(start) is significantly higher than n_elts_avoid_sso:
 start <- rep(start, times = ((length(test_strings) + 10) %/% length(start)) + 1)
 stop  <- rep(stop,  times = ((length(test_strings) + 10) %/% length(stop )) + 1)
 
@@ -48,11 +48,12 @@ test_that("Combinations of start and stop values", {
 test_that("Combinations of start and stop values where the string is shorter
 than the lookback length", {
   
-  test_string <- substr(test_string, 1, 3)
+  test_string  <- substr(test_string, 1, 3)
+  test_strings <- rep(test_string, times = n_elts_avoid_sso)
   
   expect_equal(
-    str_sub( test_string, start, stop),
-    fstr_sub(test_string, start, stop)
+    str_sub( test_strings, start, stop),
+    fstr_sub(test_strings, start, stop)
   )
 })
 
@@ -61,61 +62,66 @@ than the lookback length", {
   
   test_len <- 10000  # This is assumed to be longer than the lookback length
   
-  test_string <- paste(rep(test_string, times= test_len %/% nchar(test_string)),
-                       collapse = "")
+  test_string  <- paste(rep(test_string, times= test_len %/% nchar(test_string)),
+                        collapse = "")
+  test_strings <- rep(test_string, times = n_elts_avoid_sso)
   
   expect_equal(
-    str_sub( test_string, start, stop),
-    fstr_sub(test_string, start, stop)
+    str_sub( test_strings, start, stop),
+    fstr_sub(test_strings, start, stop)
   )
 })
 
 
-unicode_string  <- intToUtf8(10001:10030)
-unicode_strings <- rep(unicode_string, times = n_elts_avoid_sso)
-test_that("Combinations of start and stop values with Unicode strings", {
+utf8_string  <- intToUtf8(10001:10030)
+utf8_strings <- rep(utf8_string, times = n_elts_avoid_sso)
+test_that("Combinations of start and stop values with UTF-8 strings", {
   
-  len          <- nchar(unicode_string)
+  len          <- nchar(utf8_string)
   test_lengths <- c(-2*len, -(len+10):(len+10), 2*len)
   start        <- rep(test_lengths, times = length(test_lengths))
   stop         <- rep(test_lengths, each  = length(test_lengths))
   
   expect_equal(
-    str_sub( unicode_strings, start, stop),
-    fstr_sub(unicode_strings, start, stop)
+    str_sub( utf8_strings, start, stop),
+    fstr_sub(utf8_strings, start, stop)
   )
 })
 
-test_that("Combinations of start and stop values where the unicode string is 
+test_that("Combinations of start and stop values where the UTF-8 string is 
 shorter than the lookback length", {
   
-  unicode_string <- substr(unicode_string, 1, 3)
+  utf8_string <- substr(utf8_string, 1, 3)
+  
+  # The existing start and stop values are used for this test.
   
   expect_equal(
-    str_sub( unicode_string, start, stop),
-    fstr_sub(unicode_string, start, stop)
+    str_sub( utf8_string, start, stop),
+    fstr_sub(utf8_string, start, stop)
   )
 })
 
-test_that("Combinations of start and stop values where the unicode string is 
+test_that("Combinations of start and stop values where the UTF-8 string is 
 longer than the lookback length", {
   
   test_len <- 10000  # This is assumed to be longer than the lookback length
   
-  unicode_string <- 
-    paste(rep(unicode_string, times= test_len %/% nchar(unicode_string)),
+  utf8_string <- 
+    paste(rep(utf8_string, times= test_len %/% nchar(utf8_string)),
           collapse = "")
   
+  # The existing start and stop values are used for this test.
+  
   expect_equal(
-    str_sub( unicode_string, start, stop),
-    fstr_sub(unicode_string, start, stop)
+    str_sub( utf8_string, start, stop),
+    fstr_sub(utf8_string, start, stop)
   )
 })
 
 test_that("Stop == 0 gives empty string", {
   expect_equal(
     rep("", times = n_elts_avoid_sso),
-    fstr_sub( rep(unicode_string, times = n_elts_avoid_sso), -41:41, 0)
+    fstr_sub(test_strings, -41:41, 0)
   )
 })
 
@@ -136,8 +142,8 @@ test_that( "Missing arg produces an error", {
 
 test_that("Length-one inputs", {
   expect_equal(
-    str_sub( rep(c("Alpha"), times=n_elts_avoid_sso), start, stop),
-    fstr_sub(rep(c("Alpha"), times=n_elts_avoid_sso), start, stop)
+    str_sub( c("Alpha"), start, stop),
+    fstr_sub(c("Alpha"), start, stop)
   )
   expect_equal(
     str_sub( test_strings, 3, stop),
@@ -158,8 +164,10 @@ test_that("NA string", {
   # str_sub(), which is different from the behaviour of substr().
   
   expect_equal(
-    str_sub( rep(c(NA, test_string), each=n_elts_avoid_sso), start, stop),
-    fstr_sub(rep(c(NA, test_string), each=n_elts_avoid_sso), start, stop)
+    str_sub( rep(c(NA, test_string), each=n_elts_avoid_sso), rep(start, each=2), 
+                                                             rep(stop, each=2)),
+    fstr_sub(rep(c(NA, test_string), each=n_elts_avoid_sso), rep(start, each=2), 
+                                                             rep(stop, each=2))
   )
   expect_equal(
     str_sub( NA, start, stop),
@@ -327,8 +335,7 @@ test_that("CE_NATIVE-encoded strings", {
   expect_equal(encodingEnum(test_string, 1), 0)
   
   
-  # In some multibyte encodings, str_sub does not correctly preserve the 
-  # encoding, so this test compares against output from substr instead:
+  # Test against base R's native encoding handling using substr():
   
   start_stop_len   <- max(length(start), length(stop))
   test_strings     <- rep(test_string, times = start_stop_len)
@@ -531,7 +538,7 @@ test_that("SHALLOW_DUPLICATE_ATTRIB preserves the class of the input", {
   
   
   expect_equal(  # str_sub() does not preserve class, so comparison with output
-                 # from an wquivalent call to substr() is made instead:
+                 # from an equivalent call to substr() is made instead:
     substrlen(test_strings, start, stop, nchar(test_strings)),
     fstr_sub( test_strings, start, stop)
   )
