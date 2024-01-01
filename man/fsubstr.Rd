@@ -34,6 +34,8 @@
   To use negative start and stop values as offsets from the end of the strings, use \code{\link{fstr_sub}} instead.
   
   \code{fsubstr()<-} does not use parallel processing in order to avoid exceeding memory constraints.
+  
+  When \code{fsubstr()<-} is used on a pair of strings where one string is in UTF-8 encoding and the other is in native encoding then the native string is translated to UTf-0 as part of the substring replacement. This differs from the behaviour of \code{substr()<-}, which translates the UTF-8 to native, resulting in '<U+####>' for any UTF-8 characters that are not represented in the native encoding.
 }
 
 \value{

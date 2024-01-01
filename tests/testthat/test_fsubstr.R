@@ -223,12 +223,12 @@ encodingEnum <- inline::cfunction(
   '
 )
 # From Rinternals.h:
-# CE_NATIVE = 0,
-# CE_UTF8   = 1,
-# CE_LATIN1 = 2,
-# CE_BYTES  = 3,
-# CE_SYMBOL = 5,
-# CE_ANY    =99
+# CE_NATIVE =  0,
+# CE_UTF8   =  1,
+# CE_LATIN1 =  2,
+# CE_BYTES  =  3,
+# CE_SYMBOL =  5,
+# CE_ANY    = 99
 
 test_that("CE_NATIVE-encoded strings", {
   
@@ -251,7 +251,7 @@ test_that("CE_LATIN1-encoded strings", {
   test_string <- paste0("abcde_\xc3\xc4\xc5\xc6\xc7\xc8_abcde")
   Encoding(test_string) <- "latin1"
   
-  # Confirm that the test string is indeed in native encoding on the system
+  # Confirm that the test string is indeed in latin1 encoding on the system
   # running the test:
   expect_equal(Encoding(test_string), "latin1")
   
@@ -268,7 +268,7 @@ test_that("CE_BYTES-encoded strings", {
   test_string <- paste0("abcde_\xc3\xc4\xc5\xc6\xc7\xc8_abcde")
   Encoding(test_string) <- "bytes"
   
-  # Confirm that the test string is indeed in native encoding on the system
+  # Confirm that the test string is indeed in bytes encoding on the system
   # running the test:
   expect_equal(Encoding(test_string), "bytes")
   

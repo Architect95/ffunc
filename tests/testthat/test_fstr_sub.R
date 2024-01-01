@@ -1,5 +1,5 @@
 # ffunc : Fast utility functions for R, implemented in C
-# Copyright (C) 2022 Architect95
+# Copyright (C) 2022, 2023 Architect95
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,6 +13,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+source("tests/common/fsubstr.R")
 
 library(stringr)  # fstr_sub is tested against stringr::str_sub
 
@@ -285,30 +287,12 @@ test_that("CE_UTF8-encoded strings", {
   )
 })
 
-encodingEnum <- inline::cfunction(
-  c(x = "character", i = "integer"), '
-    int elt = asInteger(i);
-    if (elt < 1) {
-      error("i must be >= 1");
-    } else if (elt > xlength(x)) {
-      error("i must be <= length of the string vector");
-    }
-    cetype_t encoding = getCharCE(STRING_ELT(x, elt - 1));
-    return ScalarInteger(encoding);
-  '
-)
-# From Rinternals.h:
-# CE_NATIVE = 0,
-# CE_UTF8   = 1,
-# CE_LATIN1 = 2,
-# CE_BYTES  = 3,
-# CE_SYMBOL = 5,
-# CE_ANY    =99
 
 
 # The below expression using substr() and ifelse cases is equivalent to the
-# usual str_sub() behaviour. It is used in cases where str_sub() does not
-# produce the desired behaviour:
+# str_sub() behaviour for ASCII strings. It is used in test cases with
+# encodings for which str_sub() produces a different result than the result
+# that it produces for ASCII strings.
 substrlen <- function(strings, start, stop, str_len) {
   substr(strings, 
          ifelse(start < 0, pmax(start + str_len + 1, 1), start), 
@@ -318,17 +302,7 @@ substrlen <- function(strings, start, stop, str_len) {
 
 test_that("CE_NATIVE-encoded strings", {
   
-  chars       <- as.raw(120:255)
-  test_string <- enc2native(rawToChar(chars))
-  
-  # Search for a string that is valid in the native encoding:
-  while(!validEnc(test_string) && length(chars) > 2) {
-    chars       <- chars[2:(length(chars)-1)]
-    test_string <- enc2native(rawToChar(chars))
-  }
-  if (length(chars) <= 2) { 
-    skip("Failed to find a valid test string in the native encoding")
-  }
+  test_string <- validNativeString()
   
   # Confirm that the test string is indeed in native encoding on the system
   # running the test:
@@ -348,30 +322,14 @@ test_that("CE_NATIVE-encoded strings", {
 })
 
 
-storeLocale <- function() {
-  locale_categories <- c("LC_COLLATE","LC_CTYPE","LC_MONETARY","LC_NUMERIC",
-                         "LC_TIME")
-  return(setNames(sapply(locale_categories, Sys.getlocale), locale_categories))
-}
-resetLocale <- function(saved_locale) {
-  sapply(names(saved_locale), function(x){Sys.setlocale(x, saved_locale[[x]]) })
-}
-
-# String of two-byte characters in Windows-932 encoding:
-len                <- 51
-chars              <- rep(apply(as.matrix(c('0x98','0x40')), 1, strtoi), times=len)
-chars[(1:len)*2]   <- chars[(1:len)*2] + 0:(len-1)
-windows_932_string <- enc2native(rawToChar(as.raw(chars)))
-# For the codepage reference, see 
-# https://icu4c-demos.unicode.org/icu-bin/convexp?conv=ibm-943_P15A-2003&b=98&s=ALL#layout
 
 test_that("CE_NATIVE-encoded strings in a locale that uses a multibyte encoding 
 on Windows", {
   
-  saved_locale <- storeLocale()
+  saved_locale <- getLocale()
   Sys.setlocale("LC_ALL", "Japanese")
   
-  test_string <- windows_932_string
+  test_string <- validWindows932String()
   
   # Search for a string that is valid in the native encoding:
   while(!validEnc(test_string) && length(chars) > 2) {
@@ -405,10 +363,10 @@ on Windows", {
 test_that("CE_NATIVE-encoded strings in a locale that uses a multibyte encoding 
 on Windows, where the string is shorter than the lookback", {
   
-  saved_locale <- storeLocale()
+  saved_locale <- getLocale()
   Sys.setlocale("LC_ALL", "Japanese")
   
-  test_string <- windows_932_string
+  test_string <- validWindows932String()
   
   # Search for a string that is valid in the native encoding:
   while(!validEnc(test_string) && length(chars) > 2) {
@@ -444,10 +402,10 @@ on Windows, where the string is shorter than the lookback", {
 test_that("CE_NATIVE-encoded strings in a locale that uses a multibyte encoding 
 on Windows, where the string is longer than the lookback", {
   
-  saved_locale <- storeLocale()
+  saved_locale <- getLocale()
   Sys.setlocale("LC_ALL", "Japanese")
   
-  test_string <- windows_932_string
+  test_string <- validWindows932String()
   
   # Search for a string that is valid in the native encoding:
   while(!validEnc(test_string) && length(chars) > 2) {

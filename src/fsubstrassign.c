@@ -24,25 +24,24 @@
 
 #include "char_utils.h"
 
-#include "R_ext/Riconv.h"
+#include "substr_utils.h"
 
 
 LibImport Rboolean mbcslocale;  // From line 30 of text.c
 #define ASCII_MASK (64)
 #define IS_ASCII(x) (LEVELS(x) & ASCII_MASK)
-//#define isValidUtf8(str, len) (valid_utf8(str, len) == 0)
 
 #define FAST_ARRAY_MEM_LIMIT 10000000  // 10m.
 // This length is chosen heuristically to avoid slow memory usage patterns.
 
 
 static void setSubstrSingleElt(SEXP string, int i_start, int i_stop, 
-                              SEXP new_substring, 
-                              bool skip_validity_check,
-                              bool skip_validity_check_new_sub,
-                              SEXP output,
-                              int i,
-                              void *stack_ptr) {
+                               SEXP new_substring, 
+                               bool skip_validity_check,
+                               bool skip_validity_check_new_sub,
+                               SEXP output,
+                               int i,
+                               void *stack_ptr) {
 
   // The speed of this function could be improved by running max(i_start, 1) 
   // outside of the function. However, although a reasonable return value could 
@@ -64,14 +63,20 @@ static void setSubstrSingleElt(SEXP string, int i_start, int i_stop,
   // changed, this would break.
   --i_start;
   
-  i_start = (i_start  & -(0 < i_start));  // max(i_start, 0)
+  i_start = (i_start  & -(0 < i_start));  // Equivalent to max(i_start, 0)
   // max(i_stop, 0) is not necessary because of the i_start > i_stop check below
+
 
   const char *str      = CHAR(string);
   size_t      nbytes   = LENGTH(string); // size_t because it might be reset to
                                         // the string length in native encoding
   cetype_t    encoding = getCharCE(string);
-
+  
+  
+  // To match the behaviour of substr()<-, negative stop values are treated as
+  // the end of the string:
+  i_stop = ((i_stop < 0) ? nbytes : i_stop);
+  
   if (i_start >= nbytes || i_start >= i_stop) {
     // Start is after the end of the string or substring is empty so return the 
     // original string:
@@ -80,16 +85,34 @@ static void setSubstrSingleElt(SEXP string, int i_start, int i_stop,
   }
 
   const char *new_substr = CHAR(new_substring);
-  size_t new_nbytes         = LENGTH(new_substring);
-  
+  size_t new_nbytes      = LENGTH(new_substring);
+
   // If the two strings have different encodings, translate them both into the
   // CE_NATIVE encoding:
-  if (getCharCE(new_substring) != encoding && !IS_ASCII(new_substring)) {
-    str        = translateChar(string);  // This requires stack mgmt - see 
-                                         // sysutils.c line 980
+  cetype_t new_encoding = getCharCE(new_substring);
+  if (new_encoding != encoding && !IS_ASCII(new_substring)) {
+    
+    // If either string is UTF8, make them both UTF8, otherwise make them both
+    // native:
+    if (new_encoding == CE_UTF8) {
+      str        = translateCharUTF8(string);  // This requires stack mgmt - see
+                                               // sysutils.c line 1258
+      encoding   = CE_UTF8;   
+      
+    } else if (encoding == CE_UTF8) {
+      new_substr = translateCharUTF8(new_substring);
+      
+    } else {
+      if (encoding != CE_NATIVE) {
+        str        = translateChar(string);    // This requires stack mgmt - see 
+                                               // sysutils.c line 1079
+        encoding   = CE_NATIVE;
+      }
+      if (new_encoding != CE_NATIVE) {
+        new_substr = translateChar(new_substring);
+      }
+    }
     nbytes     = strlen(str);
-    encoding   = CE_NATIVE;
-    new_substr = translateChar(new_substring);
     new_nbytes = strlen(new_substr);
     vmaxset(stack_ptr);  // Stack mgmt as required for translateChar
   }
@@ -132,8 +155,7 @@ static void setSubstrSingleElt(SEXP string, int i_start, int i_stop,
                                encoding));
     return;
       
-  } else if (   IS_ASCII(string)
-             || encoding == CE_LATIN1
+  } else if (   encoding == CE_LATIN1
              || encoding == CE_BYTES
              || !mbcslocale) {  // and (encoding != CE_UTF8) is already known.
 
@@ -154,28 +176,85 @@ static void setSubstrSingleElt(SEXP string, int i_start, int i_stop,
     memset(&mb_st, 0, sizeof(mbstate_t));
 
     const char *end = str + nbytes;
-    int j;
-    wchar_t *out = (wchar_t *)buffer;
+    const char *const str_start = str;
+    
+    char *out = buffer;
+    
     // Copy start of old string:
-    for (j = 0; j < i_start && str < end; ++j, ++out) {
-      str += Mbrtowc(out, str, MB_CUR_MAX, &mb_st);
-    }
-
+    StrIndex end_of_chunk_before_sub = mbCount(0, i_start, str, end, &mb_st);
+    // Copying from the beginning of an existing string can be done as a direct
+    // copy of the bytes, including any state shift characters:
+    out = mempcpy(out, str_start, end_of_chunk_before_sub.ptr - str_start);
+    
     mbstate_t substring_mb_st;  // Not thread-safe.
     memset(&substring_mb_st, 0, sizeof(mbstate_t));
     
     // Copy substring:
+    int j = end_of_chunk_before_sub.index;
+    
+    
     const char *const substr_end = new_substr + new_nbytes;
-    for (; j < i_stop && str < end && new_substr < substr_end; ++j) {
-      str        += Mbrtowc(NULL, str, MB_CUR_MAX, &mb_st);
-      new_substr += Mbrtowc(out,  str, MB_CUR_MAX, &substring_mb_st);
+    
+    if (!mbsinit(&mb_st)) {  
+      
+      str = end_of_chunk_before_sub.ptr;
+      
+      // First character:
+      wchar_t first_substr_char;
+      if (j < i_stop && str < end && new_substr < substr_end) {
+        mbstate_t state_before_sub = mb_st;
+        str        += Mbrtowc(NULL, str, MB_CUR_MAX, &mb_st);
+        new_substr += Mbrtowc(&first_substr_char, new_substr, MB_CUR_MAX, &substring_mb_st);
+        out         = wcrtomb(out, first_substr_char, &state_before_sub);
+        ++j;
+      }
+      const char *const rest_of_new_substr_start = new_substr;
+      
+      for (; j < i_stop && str < end && new_substr < substr_end; ++j) {
+        str        += Mbrtowc(NULL, str, MB_CUR_MAX, &mb_st);
+        new_substr += Mbrtowc(NULL, new_substr, MB_CUR_MAX, &substring_mb_st);
+      }
+      out = mempcpy(out, rest_of_new_substr_start, 
+                    new_substr - rest_of_new_substr_start);
+
+    } else {
+      // The new string is already in the default shift state, and the
+      // substring can be copied in without modification.
+      
+      const char *const new_substr_start = new_substr;
+      str = end_of_chunk_before_sub.ptr;
+      for (; j < i_stop && str < end && new_substr < substr_end; ++j) {
+        str        += Mbrtowc(NULL, str, MB_CUR_MAX, &mb_st);
+        new_substr += Mbrtowc(NULL, new_substr, MB_CUR_MAX, &substring_mb_st);
+      }
+      out = mempcpy(out, new_substr_start, new_substr - new_substr_start);
     }
+    
     // Copy end of old string:
-    for (; str < end; ++out) {
-      str += Mbrtowc(out, str, MB_CUR_MAX, &mb_st);
+    
+    if (substring_mb_st != mb_st) {
+    
+      // First character:
+      wchar_t first_char_after_sub;
+      if (str < end) {
+        mbstate_t state_before_sub = mb_st;
+        str        += Mbrtowc(first_char_after_sub, str, MB_CUR_MAX, &mb_st);
+        out         = wcrtomb(out, first_char_after_sub, &state_before_sub);
+        ++j;
+      }
+      const char *const rest_of_new_substr_start = new_substr;
+      
+      out = mempcpy(out, str, end - str);
+      
+    } else {
+      // The rest of the old string is in the same shift state as we are in at
+      // the end of the new substring, so the rest of the old string can be
+      // copied directly without emitting any state change characters:
+      out = mempcpy(out, str, end - str);
     }
+    
     SET_STRING_ELT(output, i, mkCharLenCE(buffer, 
-                                          ((char *)out - buffer),
+                                          (out - buffer),
                                           encoding));
     return;
   }
@@ -186,30 +265,7 @@ SEXP fsubstrassignR(SEXP x, SEXP start, SEXP stop, SEXP replacement) {
   const R_xlen_t n = xlength(x);
   
   if (!isString(x)) {
-    HANDLE_NON_STRING_INPUT(x, n)
-  }
-  
-  
-  // Use substr<- if it appears that all the strings are ASCII, since for ASCII
-  // strings, substr<- is faster:
-  const int n_tests = unguardedMin(n, 50);
-  bool ascii_test = TRUE;
-  const int idx = (n - n_tests) >> 1;  // This is floor((n - n_tests) / 2)
-  for (int i=0; i < n_tests; ++i) {
-    const SEXP elt = STRING_ELT(x, idx + i);
-    const cetype_t encoding = getCharCE(elt);
-    ascii_test = ascii_test && (   IS_ASCII(elt)
-                                || (!mbcslocale && encoding != CE_UTF8)
-                                || encoding == CE_LATIN1 
-                                || encoding == CE_BYTES);
-  }
-  if (ascii_test) {
-    SEXP substr_call = 
-      PROTECT(lang5(install("substr<-"), x, start, stop, replacement));
-    SEXP output = eval(substr_call, R_BaseEnv);
-    UNPROTECT(1);
-    SHALLOW_DUPLICATE_ATTRIB(output, x);  // This copies the class, if any.
-    return output;
+    error("Left-hand side of assignment is a non-character object");
   }
   
   const R_xlen_t value_len = LENGTH(replacement);
