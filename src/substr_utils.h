@@ -253,7 +253,7 @@ substrWithinShiftState(const char *start_of_sub, const cetype_t encoding,
   mbstate_t mb_st, const char *const end, int nchars, const int i_stop) {
   // Cannot directly copy the bytes of the substring in the original
   // multibyte substring, because the state changing control characters
-  // for the current multibyte state occure before start_point in the
+  // for the current multibyte state occur before start_point in the
   // original string.
   
   if (start_of_sub == end) { return EMPTY_STRING_CLC; }
@@ -335,6 +335,7 @@ substrMultiByteChars(const char *const start_of_str, const int nbytes,
   
   if (i_stop >= nbytes) {
     return (const CharLenCE) {str, nbytes -(int)(str - start_of_str), encoding};
+    
   } else {
     
     StrIndex end_of_sub = mbCount(start_of_sub.index, i_stop, str, end, &mb_st);
