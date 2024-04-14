@@ -517,7 +517,9 @@ expect_equal(encodingEnum(native_string, 1), 0)
 # CE_LATIN1:
 latin1_string           <- paste0("abcde_\xc3\xc4\xc5\xc6\xc7\xc8_abcde")
 Encoding(latin1_string) <- "latin1"
-expect_equal(Encoding(latin1_string), "latin1")
+if (substr(getLocale()["LC_COLLATE"],1,7)=="English"){
+  expect_equal(Encoding(latin1_string), "latin1")
+}
 # CE_BYTES:
 bytes_string            <- paste0("abcde_\xc3\xc4\xc5\xc6\xc7\xc8_abcde")
 Encoding(bytes_string)  <- "bytes"
