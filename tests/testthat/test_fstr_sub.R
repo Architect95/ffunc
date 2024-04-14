@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-source("tests/common/fsubstr.R")
+source(test_path("../common/fsubstr.R"))
 
 library(stringr)  # fstr_sub is tested against stringr::str_sub
 
@@ -330,13 +330,7 @@ on Windows", {
   Sys.setlocale("LC_ALL", "Japanese")
   
   test_string <- validWindows932String()
-  
-  # Search for a string that is valid in the native encoding:
-  while(!validEnc(test_string) && length(chars) > 2) {
-    chars       <- chars[2:(length(chars)-1)]
-    test_string <- enc2native(rawToChar(chars))
-  }
-  if (length(chars) <= 2) { 
+  if (nchar(test_string) <= 2) { 
     skip("Failed to find a valid test string in the native encoding")
   }
   
@@ -367,13 +361,7 @@ on Windows, where the string is shorter than the lookback", {
   Sys.setlocale("LC_ALL", "Japanese")
   
   test_string <- validWindows932String()
-  
-  # Search for a string that is valid in the native encoding:
-  while(!validEnc(test_string) && length(chars) > 2) {
-    chars       <- chars[2:(length(chars)-1)]
-    test_string <- enc2native(rawToChar(chars))
-  }
-  if (length(chars) <= 2) { 
+  if (nchar(test_string) <= 2) { 
     skip("Failed to find a valid test string in the native encoding")
   }
   
@@ -406,13 +394,7 @@ on Windows, where the string is longer than the lookback", {
   Sys.setlocale("LC_ALL", "Japanese")
   
   test_string <- validWindows932String()
-  
-  # Search for a string that is valid in the native encoding:
-  while(!validEnc(test_string) && length(chars) > 2) {
-    chars       <- chars[2:(length(chars)-1)]
-    test_string <- enc2native(rawToChar(chars))
-  }
-  if (length(chars) <= 2) { 
+  if (nchar(test_string) <= 2) { 
     skip("Failed to find a valid test string in the native encoding")
   }
   

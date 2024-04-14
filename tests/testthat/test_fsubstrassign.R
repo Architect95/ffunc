@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-source("tests/common/fsubstr.R")
+source(test_path("../common/fsubstr.R"))
 
 # Set this to true if you want to do a visual check of the output:
 SHOW_SAMPLE_OUTPUT <- FALSE

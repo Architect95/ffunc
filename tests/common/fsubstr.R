@@ -65,6 +65,12 @@ validWindows932String <- function() {
   # For the codepage reference, see 
   # https://icu4c-demos.unicode.org/icu-bin/convexp?conv=ibm-943_P15A-2003&b=98&s=ALL#layout
   
+  # Search for a string that is valid in the native encoding:
+  while(!validEnc(windows_932_string) && length(chars) > 2) {
+    chars         <- chars[2:(length(chars)-1)]
+    windows_932_string <- enc2native(rawToChar(chars))
+  }
+  
   return(windows_932_string)
 }
 
