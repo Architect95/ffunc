@@ -20,11 +20,9 @@ source(test_path("../common/fsubstr.R"))
 SHOW_SAMPLE_OUTPUT <- FALSE
 
 if(exists("LOCALE_TO_USE")){
+  saved_locale <- getLocale()
   Sys.setlocale("LC_ALL", LOCALE_TO_USE)
-} else {
-  Sys.setlocale("LC_ALL", "English")
 }
-
 
 
 
@@ -49,6 +47,7 @@ rep_string       <- "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 # Make sure length(start) is significantly higher than n_elts_avoid_sso:
 start <- rep(start, times = ((length(test_strings) + 10) %/% length(start)) + 1)
 stop  <- rep(stop,  times = ((length(test_strings) + 10) %/% length(stop )) + 1)
+
 
 
 test_that("Combinations of start and stop values", {
@@ -509,22 +508,18 @@ if (package_version(R.Version()) >= "4.3.1") {
   })
 }
 
-
 # Strings of various encodings:
 # CE_NATIVE:
 native_string <- validNativeString()
 expect_equal(encodingEnum(native_string, 1), 0)
 # CE_LATIN1:
-latin1_string           <- paste0("abcde_\xc3\xc4\xc5\xc6\xc7\xc8_abcde")
+latin1_string           <- "abcde_\xc3\xc4\xc5\xc6\xc7\xc8_abcde"
 Encoding(latin1_string) <- "latin1"
-if (substr(getLocale()["LC_COLLATE"],1,7)=="English"){
-  expect_equal(Encoding(latin1_string), "latin1")
-}
+expect_equal(Encoding(latin1_string), "latin1")
 # CE_BYTES:
-bytes_string            <- paste0("abcde_\xc3\xc4\xc5\xc6\xc7\xc8_abcde")
+bytes_string            <- "abcde_\xc3\xc4\xc5\xc6\xc7\xc8_abcde"
 Encoding(bytes_string)  <- "bytes"
 expect_equal(Encoding(bytes_string), "bytes")
-
 # From the R help entry for Encoding(): 'Strings marked as "bytes" are intended 
 # to be non-ASCII strings which should be manipulated as bytes, and never 
 # converted to a character encoding'
@@ -789,3 +784,8 @@ test_that("SHALLOW_DUPLICATE_ATTRIB preserves the class of the input", {
   # test directly against "my_example_class":
   expect_equal(class(utf8_strings_2), "my_example_class")
 })
+
+
+if(exists("LOCALE_TO_USE")){
+  resetLocale(saved_locale)
+}

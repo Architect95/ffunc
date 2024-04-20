@@ -14,6 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+source(test_path("../common/fsubstr.R"))
+
+if(exists("LOCALE_TO_USE")){
+  saved_locale <- getLocale()
+  Sys.setlocale("LC_ALL", LOCALE_TO_USE)
+}
+
 
 
 n_elts_avoid_sso <- 3500  # Input vector must be long enough to avoid
@@ -34,22 +41,30 @@ test_that("Substrings using all combinations of test_lengths", {
   )
 })
 
-test_that("Substrings using every ASCII character", {
+test_that("Substrings using characters 0-255", {
+  # This tests all the ASCII characters in encodings such as ISO-8859-* and 
+  # UTF-8. However, in some other encodings, characters 0-255 are not the ASCII
+  # character set and some of these values are not even valid characters in 
+  # some encodings.
   
   for(i in 0:255) {
     
     test_string      <- paste0("ab", rawToChar(as.raw(i)), "cd")
     
-    test_strings     <- rep(test_string, times = n_elts_avoid_sso)
-    len              <- nchar(test_string)
-    test_lengths     <- c(-2:(len+1), 2*len)
-    start            <- rep(test_lengths, times = length(test_lengths))
-    stop             <- rep(test_lengths, each  = length(test_lengths))
-    
-    expect_equal(
-      substr( test_strings, start, stop),
-      fsubstr(test_strings, start, stop)
-    )
+    if(validEnc(test_string)){  # Test only if character i is valid in current
+                                # encoding
+      
+      test_strings     <- rep(test_string, times = n_elts_avoid_sso)
+      len              <- nchar(test_string)
+      test_lengths     <- c(-2:(len+1), 2*len)
+      start            <- rep(test_lengths, times = length(test_lengths))
+      stop             <- rep(test_lengths, each  = length(test_lengths))
+      
+      expect_equal(
+        substr( test_strings, start, stop),
+        fsubstr(test_strings, start, stop)
+      )
+    }
   }
 })
 
@@ -232,7 +247,7 @@ encodingEnum <- inline::cfunction(
 
 test_that("CE_NATIVE-encoded strings", {
   
-  test_string <- enc2native(rawToChar(as.raw(120:255)))
+  test_string <- validNativeString()
   
   # Confirm that the test string is indeed in native encoding on the system
   # running the test:
@@ -248,14 +263,14 @@ test_that("CE_NATIVE-encoded strings", {
 
 test_that("CE_LATIN1-encoded strings", {
   
-  test_string <- paste0("abcde_\xc3\xc4\xc5\xc6\xc7\xc8_abcde")
-  Encoding(test_string) <- "latin1"
+  latin1_string <- "abcde_\xc3\xc4\xc5\xc6\xc7\xc8_abcde"
+  Encoding(latin1_string) <- "latin1"
   
   # Confirm that the test string is indeed in latin1 encoding on the system
   # running the test:
-  expect_equal(Encoding(test_string), "latin1")
+  expect_equal(Encoding(latin1_string), "latin1")
   
-  test_strings     <- rep(test_string, times = n_elts_avoid_sso)
+  test_strings     <- rep(latin1_string, times = n_elts_avoid_sso)
   
   expect_equal(
     substr( test_strings, start, stop),
@@ -263,16 +278,18 @@ test_that("CE_LATIN1-encoded strings", {
   )
 })
 
+
+
 test_that("CE_BYTES-encoded strings", {
   
-  test_string <- paste0("abcde_\xc3\xc4\xc5\xc6\xc7\xc8_abcde")
-  Encoding(test_string) <- "bytes"
+  bytes_string            <- "abcde_\xc3\xc4\xc5\xc6\xc7\xc8_abcde"
+  Encoding(bytes_string)  <- "bytes"
   
   # Confirm that the test string is indeed in bytes encoding on the system
   # running the test:
-  expect_equal(Encoding(test_string), "bytes")
+  expect_equal(Encoding(bytes_string), "bytes")
   
-  test_strings     <- rep(test_string, times = n_elts_avoid_sso)
+  test_strings     <- rep(bytes_string, times = n_elts_avoid_sso)
   
   expect_equal(
     substr( test_strings, start, stop),
@@ -304,3 +321,7 @@ test_that("SHALLOW_DUPLICATE_ATTRIB preserves the class of the input", {
   )
 })
 
+
+if(exists("LOCALE_TO_USE")){
+  resetLocale(saved_locale)
+}

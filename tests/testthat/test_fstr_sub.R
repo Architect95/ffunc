@@ -18,6 +18,12 @@ source(test_path("../common/fsubstr.R"))
 
 library(stringr)  # fstr_sub is tested against stringr::str_sub
 
+if(exists("LOCALE_TO_USE")){
+  saved_locale <- getLocale()
+  Sys.setlocale("LC_ALL", LOCALE_TO_USE)
+}
+
+
 n_elts_avoid_sso <- 3500  # Input vector must be long enough to avoid
                           # small size optimisations.
                           # Currently, there is no such small size optimization
@@ -425,7 +431,7 @@ on Windows, where the string is longer than the lookback", {
 
 test_that("CE_LATIN1-encoded strings", {
   
-  test_string <- paste0("abcde_\xc3\xc4\xc5\xc6\xc7\xc8_abcde")
+  test_string <- "abcde_\xc3\xc4\xc5\xc6\xc7\xc8_abcde"
   Encoding(test_string) <- "latin1"
   
   # Confirm that the test string is indeed in Latin1 encoding on the system
@@ -442,7 +448,7 @@ test_that("CE_LATIN1-encoded strings", {
 
 test_that("CE_BYTES-encoded strings", {
   
-  test_string <- paste0("abcde_\xc3\xc4\xc5\xc6\xc7\xc8_abcde")
+  test_string <- "abcde_\xc3\xc4\xc5\xc6\xc7\xc8_abcde"
   n_char <- 18
   Encoding(test_string) <- "bytes"
   
@@ -489,3 +495,8 @@ test_that("SHALLOW_DUPLICATE_ATTRIB preserves the class of the input", {
     class(fstr_sub( test_strings, start, stop))
   )
 })
+
+
+if(exists("LOCALE_TO_USE")){
+  resetLocale(saved_locale)
+}
