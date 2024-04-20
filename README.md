@@ -41,7 +41,7 @@ As with `substr()`, the resulting substrings can be assigned to, using `fsubstr(
 
 #### Performance
 
-`fsubstr` is **25%** faster than `substr` on ASCII strings, **75%** faster for UTF-8 Unicode and **over 4.5x** the speed of `substr` on Windows-932 native encoding.
+`fsubstr` is **35%** faster than `substr` on ASCII strings, **75%** faster for UTF-8 Unicode and **4.5x** the speed of `substr` on Windows-932 native encoding.
 
 
 <details>
@@ -54,9 +54,9 @@ As with `substr()`, the resulting substrings can be assigned to, using `fsubstr(
 +   fsubstr(test_strings, start, stop)
 + )
 Unit: milliseconds
-                              expr    min      lq     mean  median     uq    max neval
- substr(test_strings, start, stop) 3.7880 3.85015 4.002272 3.91205 4.0104 5.3997   100
-fsubstr(test_strings, start, stop) 2.8797 3.04305 3.269372 3.11565 3.3691 4.3053   100
+                               expr    min      lq     mean median      uq     max neval
+  substr(test_strings, start, stop) 3.7688 3.82560 4.012606 3.8862 3.94030 12.4761   100
+ fsubstr(test_strings, start, stop) 2.6653 2.80215 3.071273 2.8713 3.10785 11.1838   100
 
 > # Unicode:
 > microbenchmark::microbenchmark(
@@ -64,9 +64,9 @@ fsubstr(test_strings, start, stop) 2.8797 3.04305 3.269372 3.11565 3.3691 4.3053
 +   fsubstr(unicode_strings, start, stop)
 + )
 Unit: milliseconds
-                                 expr    min      lq     mean  median     uq     max neval
- substr(unicode_strings, start, stop) 8.9392 9.30175 9.469144 9.41545 9.5752 10.1570   100
-fsubstr(unicode_strings, start, stop) 5.1410 5.31800 5.597086 5.40375 5.7531  7.0937   100
+                                  expr    min      lq     mean  median      uq     max neval
+  substr(unicode_strings, start, stop) 9.1654 9.23155 9.583475 9.38705 9.55365 17.2722   100
+ fsubstr(unicode_strings, start, stop) 4.9629 5.10895 5.552599 5.30215 5.99965  7.0865   100
 
 > # Native multibyte (Windows-932 Japanese):
 > microbenchmark::microbenchmark(
@@ -74,14 +74,14 @@ fsubstr(unicode_strings, start, stop) 5.1410 5.31800 5.597086 5.40375 5.7531  7.
 +   fsubstr(test_strings, start, stop)
 + )
 Unit: milliseconds
-                              expr      min       lq      mean   median        uq      max neval
- substr(test_strings, start, stop) 104.7471 105.4938 106.74122 106.7004 107.52145 111.4871   100
-fsubstr(test_strings, start, stop)  22.3756  22.7333  23.15743  22.8911  23.12435  30.0000   100
+                               expr     min       lq      mean    median        uq      max neval
+  substr(test_strings, start, stop) 99.2071 100.4725 102.19818 101.89140 102.51550 149.4295   100
+ fsubstr(test_strings, start, stop) 22.2096  22.5142  24.08002  22.75465  23.29965  40.4882   100
 ```
 _Tested on Intel(R) Core(TM) i5-8400 CPU @ 2.80GHz (6 Cores), 8 GB RAM, R version 4.0.2_
 </details>
 
-Replacement of substrings using `fsbustr()<-` is **50%** faster than `substr()<-` for Unicode and **15%** faster for native encodings, but is **-7%** slower in the case of purely ASCII strings.
+Replacement of substrings using `fsbustr()<-` is **50%** faster than `substr()<-` for Unicode and **13%** faster for native encodings, but is **-5%** slower in the case of purely ASCII strings.
 
 <details>
       <summary>Benchmark results</summary>
@@ -93,10 +93,9 @@ Replacement of substrings using `fsbustr()<-` is **50%** faster than `substr()<-
 +   fsubstr(test_strings_2, start, stop) <- rep_string
 + )
 Unit: milliseconds
-Unit: milliseconds
-                                               expr     min        lq     mean    median       uq     max neval
-    substr(test_strings, start, stop) <- rep_string  9.7945  9.886001 10.34820  9.945401 10.09885 41.9257   100
- fsubstr(test_strings_2, start, stop) <- rep_string 10.3580 10.493951 10.64919 10.583852 10.75350 11.3062   100
+                                               expr     min      lq     mean   median       uq     max neval
+    substr(test_strings, start, stop) <- rep_string  9.6011  9.8018 10.14384  9.98060 10.20840 17.2230   100
+ fsubstr(test_strings_2, start, stop) <- rep_string 10.1201 10.3400 10.75959 10.54735 10.76565 17.6955   100
  
  > # Unicode:
  > microbenchmark::microbenchmark(
@@ -104,9 +103,9 @@ Unit: milliseconds
 +   fsubstr(unicode_strings_2, start, stop) <- rep_unicode
 + )
 Unit: milliseconds
-                                                   expr     min       lq     mean  median       uq     max neval
-    substr(unicode_strings, start, stop) <- rep_unicode 37.0960 37.87270 38.75429 38.3258 39.05745 59.2914   100
- fsubstr(unicode_strings_2, start, stop) <- rep_unicode 22.3753 25.32145 25.70300 25.5374 26.12995 29.7414   100
+                                                   expr     min       lq     mean   median       uq     max neval
+    substr(unicode_strings, start, stop) <- rep_unicode 37.2295 37.51450 38.07830 37.79465 38.45315 46.9437   100
+ fsubstr(unicode_strings_2, start, stop) <- rep_unicode 23.5424 25.07725 25.51652 25.29865 25.63595 34.6300   100
  
  > # Native multibyte (Windows-932 Japanese):
 > microbenchmark::microbenchmark(
@@ -115,8 +114,8 @@ Unit: milliseconds
 + )
 Unit: milliseconds
                                                expr      min       lq     mean   median       uq      max neval
-    substr(test_strings, start, stop) <- rep_string 122.1685 125.4150 127.5562 127.1847 128.5193 146.9462   100
- fsubstr(test_strings_2, start, stop) <- rep_string 107.9814 109.5362 111.1590 110.6877 111.8651 130.6164   100
+    substr(test_strings, start, stop) <- rep_string 122.5946 123.4407 124.9449 123.9614 125.9677 134.5395   100
+ fsubstr(test_strings_2, start, stop) <- rep_string 107.9184 109.5022 110.4082 109.9912 110.8768 116.9503   100
 ```
 _Tested on Intel(R) Core(TM) i5-8400 CPU @ 2.80GHz (6 Cores), 8 GB RAM, R version 4.0.2_
 </details>
@@ -158,7 +157,7 @@ Another fast substring function, in which negative start and stop arguments may 
 
 #### Performance
 
-`fstr_sub` is **80%** faster than `str_sub` on ASCII strings, **67%** faster on UTF-8 Unicode and **2.3x** the speed of `str_sub` on Windows-932 native encoding.
+`fstr_sub` is **90%** faster than `str_sub` on ASCII strings, **75%** faster on UTF-8 Unicode and **over 2x** the speed of `str_sub` on Windows-932 native encoding.
 
 <details>
       <summary>Benchmark results</summary>
@@ -176,10 +175,10 @@ Another fast substring function, in which negative start and stop arguments may 
 +   fstr_sub( test_strings, start, stop)
 + )
 Unit: milliseconds
-                                      expr    min      lq     mean  median     uq     max neval
-        str_sub(test_strings, start, stop) 5.3253 5.56700 5.988495 5.64785 5.8461 26.7549   100
- substrlen(test_strings, start, stop, len) 3.9953 4.09755 4.664722 4.15700 4.2786 24.9957   100
-       fstr_sub(test_strings, start, stop) 2.8920 3.07075 3.321851 3.14855 3.4825  4.9487   100
+                                      expr      min       lq     mean   median       uq     max neval
+        str_sub(test_strings, start, stop) 5.402701 5.555951 5.848328 5.661601 5.869951 14.8824   100
+ substrlen(test_strings, start, stop, len) 3.892301 4.000451 4.220415 4.083602 4.207301 11.9097   100
+       fstr_sub(test_strings, start, stop) 2.680801 2.865401 3.255502 2.919801 3.318201 11.9894   100
 
 > # Unicode:
 > microbenchmark::microbenchmark(
@@ -189,9 +188,9 @@ Unit: milliseconds
 + )
 Unit: milliseconds
                                          expr     min       lq      mean   median       uq     max neval
-        str_sub(unicode_strings, start, stop) 11.1969 11.46355 11.910765 11.58195 11.93440 31.0321   100
- substrlen(unicode_strings, start, stop, len)  8.9586  9.25420  9.545739  9.43815  9.80315 10.5482   100
-       fstr_sub(unicode_strings, start, stop)  6.4187  6.66950  7.192353  6.94520  7.53525 10.0563   100
+        str_sub(unicode_strings, start, stop) 11.3659 11.49480 11.908870 11.71810 11.89550 20.8496   100
+ substrlen(unicode_strings, start, stop, len)  9.1443  9.24115  9.604596  9.37885  9.64010 16.7211   100
+       fstr_sub(unicode_strings, start, stop)  6.2186  6.47280  6.909581  6.65885  7.17215  9.9839   100
  
  > # Native multibyte (Windows-932 Japanese):
 > microbenchmark::microbenchmark(
@@ -199,9 +198,9 @@ Unit: milliseconds
 +   fstr_sub( test_strings, start, stop)
 + )
 Unit: milliseconds
-                                      expr      min        lq      mean   median       uq      max neval
- substrlen(test_strings, start, stop, len) 104.9625 106.84110 108.63270 107.5460 108.7131 133.5881   100
-       fstr_sub(test_strings, start, stop)  43.1571  45.17225  48.79534  46.4194  49.2254  98.1057   100
+                                      expr     min        lq     mean   median       uq      max neval
+ substrlen(test_strings, start, stop, len) 98.4097 100.23745 101.9503 100.9948 101.9676 144.7038   100
+       fstr_sub(test_strings, start, stop) 42.0381  43.37445  47.2374  44.3802  47.2840  81.2012   100
  ```
 _Tested on Intel(R) Core(TM) i5-8400 CPU @ 2.80GHz (6 Cores), 8 GB RAM, R version 4.0.2_
 </details>
