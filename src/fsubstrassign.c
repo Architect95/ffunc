@@ -69,7 +69,7 @@ static void setSubstrSingleElt(SEXP string, int i_start, int i_stop,
 
   const char *str      = CHAR(string);
   size_t      nbytes   = LENGTH(string); // size_t because it might be reset to
-                                        // the string length in native encoding
+                                         // the string length in native encoding
   cetype_t    encoding = getCharCE(string);
   
   
@@ -190,9 +190,8 @@ static void setSubstrSingleElt(SEXP string, int i_start, int i_stop,
     memset(&substring_mb_st, 0, sizeof(mbstate_t));
     
     // Copy substring:
+    
     int j = end_of_chunk_before_sub.index;
-    
-    
     const char *const substr_end = new_substr + new_nbytes;
     
     if (!mbsinit(&mb_st)) {  
@@ -200,12 +199,12 @@ static void setSubstrSingleElt(SEXP string, int i_start, int i_stop,
       str = end_of_chunk_before_sub.ptr;
       
       // First character:
-      wchar_t first_substr_char;
       if (j < i_stop && str < end && new_substr < substr_end) {
+        wchar_t first_substr_char;
         mbstate_t state_before_sub = mb_st;
         str        += Mbrtowc(NULL, str, MB_CUR_MAX, &mb_st);
         new_substr += Mbrtowc(&first_substr_char, new_substr, MB_CUR_MAX, &substring_mb_st);
-        out         = wcrtomb(out, first_substr_char, &state_before_sub);
+        out  += (char)wcrtomb(out, first_substr_char, &state_before_sub);
         ++j;
       }
       const char *const rest_of_new_substr_start = new_substr;
@@ -238,11 +237,10 @@ static void setSubstrSingleElt(SEXP string, int i_start, int i_stop,
       wchar_t first_char_after_sub;
       if (str < end) {
         mbstate_t state_before_sub = mb_st;
-        str        += Mbrtowc(first_char_after_sub, str, MB_CUR_MAX, &mb_st);
-        out         = wcrtomb(out, first_char_after_sub, &state_before_sub);
+        str   += (char)Mbrtowc(&first_char_after_sub, str, MB_CUR_MAX, &mb_st);
+        out   += (char)wcrtomb(out, first_char_after_sub, &state_before_sub);
         ++j;
       }
-      const char *const rest_of_new_substr_start = new_substr;
       
       out = mempcpy(out, str, end - str);
       
@@ -294,8 +292,7 @@ SEXP fsubstrassignR(SEXP x, SEXP start, SEXP stop, SEXP replacement) {
     if (!isInteger(start)) {
       error("Start contains non-integer values");
     }
-    // Otherwise start was coerced to an integer vector:
-    warning("Start contains non-integers that will be coerced");
+    // Otherwise start was coerced to an integer vector.
   }
   if (!isInteger(stop)) {
     stop = PROTECT(coerceVector(stop, INTSXP));
@@ -305,8 +302,7 @@ SEXP fsubstrassignR(SEXP x, SEXP start, SEXP stop, SEXP replacement) {
     if (!isInteger(stop)) {
       error("Stop contains non-integer values");
     }
-    // Otherwise start was coerced to an integer vector:
-    warning("Stop contains non-integers that will be coerced");
+    // Otherwise start was coerced to an integer vector.
   }
 
   SEXP output = PROTECT(allocVector(STRSXP, n));
@@ -318,18 +314,9 @@ SEXP fsubstrassignR(SEXP x, SEXP start, SEXP stop, SEXP replacement) {
       SET_STRING_ELT(output, i, NA_STRING);
     }
   } else {
-    if ((n > start_len) && ((n % start_len) != 0)) {
-      warning("Length of start is not a factor of length of vector; "
-              "start will be partially recycled.");
-    }
-    if ((n > stop_len) && ((n % stop_len) != 0)) {
-      warning("Length of stop is not a factor of length of vector; "
-              "stop will be partially recycled.");
-    }
-    if ((n > value_len) && ((n % value_len) != 0)) {
-      warning("Length of replacement substring is not a factor of length of "
-              "vector; replacement substring will be partially recycled.");
-    }
+    // The lengths of some of the arguments start, stop and replacement are not
+    // factors of the length of the input string vector, so these arguments will
+    // be partially recycled.
     
     strbuff.data = malloc(strbuff.defaultSize);
     void *const stack_ptr = vmaxget();

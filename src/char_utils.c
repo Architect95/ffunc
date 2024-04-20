@@ -172,7 +172,7 @@ static FORCE_INLINE char *getCodeSet(const char *lc_ctype, char *buffer,
   }
   
   char *at = strchr(c, '@');
-  // If there's a [@modifier], write a temporary string without it
+  // If there's a [@modifier], write a temporary string without it:
   unsigned char len = buflen - 1;
   if (at != NULL) {
     len = min(at - c, len);

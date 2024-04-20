@@ -131,16 +131,6 @@ static inline void fillStringVector(SEXP output, R_xlen_t loop_start,
   }
 }
 
-static FORCE_INLINE void 
-warnIfVectorArgRecycled(const char * restrict arg_name, const R_xlen_t arg_len,
-                        const R_xlen_t len_to_match) {
-                          
-  if ((arg_len < len_to_match) && ((len_to_match % arg_len) != 0)) {
-    warning("Length of %s is not a factor of length of vector; "
-            "%s will be partially recycled.", arg_name, arg_name);
-  }
-}
-
 
 // UTF-8 string functions:
 

@@ -135,8 +135,7 @@ SEXP fstr_subR(SEXP x, SEXP start, SEXP stop) {
     if (!isInteger(start)) {
       error("Start contains non-integer values");
     }
-    // Otherwise start was coerced to an integer vector:
-    warning("Start contains non-integers that will be coerced");
+    // Otherwise start was coerced to an integer vector.
   }
   if (!isInteger(stop)) {
     stop = PROTECT(coerceVector(stop, INTSXP));
@@ -146,8 +145,7 @@ SEXP fstr_subR(SEXP x, SEXP start, SEXP stop) {
     if (!isInteger(stop)) {
       error("Stop contains non-integer values");
     }
-    // Otherwise start was coerced to an integer vector:
-    warning("Stop contains non-integers that will be coerced");
+    // Otherwise start was coerced to an integer vector.
   }
   
   is_stateless_enc = !mbcslocale || isStatelessEncoding();
@@ -178,7 +176,6 @@ SEXP fstr_subR(SEXP x, SEXP start, SEXP stop) {
       if (start_len == 1) {
         
         int i_start = asInteger(start);
-        warnIfVectorArgRecycled("stop",  stop_len,  n);
 
         FSUBSTR_LOOP(signedSubstrSingleElt, STRING_ELT(x,i), out_len,
                     i_start, INTEGER(stop)[i % stop_len])
@@ -186,14 +183,11 @@ SEXP fstr_subR(SEXP x, SEXP start, SEXP stop) {
       } else if (stop_len == 1) {
         
         int i_stop = asInteger(stop);
-        warnIfVectorArgRecycled("start", start_len, n);
         
         FSUBSTR_LOOP(signedSubstrSingleElt, STRING_ELT(x,i), out_len,
                     INTEGER(start)[i % start_len], i_stop)
 
       } else {
-        warnIfVectorArgRecycled("start", start_len, n);
-        warnIfVectorArgRecycled("stop",  stop_len,  n);
 
         FSUBSTR_LOOP(signedSubstrSingleElt, STRING_ELT(x,i), out_len,
                     INTEGER(start)[i % start_len], INTEGER(stop)[i % stop_len])
@@ -203,7 +197,6 @@ SEXP fstr_subR(SEXP x, SEXP start, SEXP stop) {
       if (start_len == 1) {
         
         int i_start = asInteger(start);
-        warnIfVectorArgRecycled("stop",  stop_len,  out_len);
 
         FSUBSTR_LOOP(signedSubstrSingleElt, STRING_ELT(x, i % n), out_len,
                     i_start, INTEGER(stop)[i % stop_len])
@@ -211,14 +204,11 @@ SEXP fstr_subR(SEXP x, SEXP start, SEXP stop) {
       } else if (stop_len == 1) {
         
         int i_stop = asInteger(stop);
-        warnIfVectorArgRecycled("start", start_len, out_len);
         
         FSUBSTR_LOOP(signedSubstrSingleElt, STRING_ELT(x, i % n), out_len,
                     INTEGER(start)[i % start_len], i_stop)
 
       } else {
-        warnIfVectorArgRecycled("start", start_len, out_len);
-        warnIfVectorArgRecycled("stop",  stop_len,  out_len);
 
         FSUBSTR_LOOP(signedSubstrSingleElt, STRING_ELT(x, i % n), out_len,
                     INTEGER(start)[i % start_len], INTEGER(stop)[i % stop_len])
